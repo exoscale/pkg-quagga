@@ -1,3 +1,10 @@
+quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
+
+  * Adapt to compile on Xenial.
+     + Build-Depends on pkg-config.
+
+ -- Vincent Bernat <bernat@debian.org>  Tue, 23 May 2017 16:15:53 +0200
+
 quagga (1.0.0+cl3u11) RELEASED; urgency=medium
 
   * New Enabled: PIM spt switchover
