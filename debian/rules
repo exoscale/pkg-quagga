@@ -36,6 +36,7 @@ override_dh_auto_configure:
 		--enable-exampledir=/usr/share/doc/quagga/examples/ \
 		--localstatedir=/var/run/quagga \
 		--sbindir=/usr/lib/quagga \
+	        --libdir=/usr/lib/quagga \
 		--sysconfdir=/etc/quagga \
 		$(USE_SNMP) \
 		--enable-ospfapi=yes \
@@ -88,9 +89,6 @@ override_dh_auto_install:
 
 	# installing the Quagga specific SNMP MIB
 	install -D -m 644 ./zebra/GNOME-PRODUCT-ZEBRA-MIB debian/tmp/usr/share/snmp/mibs/GNOME-PRODUCT-ZEBRA-MIB
-
-	# cleaning .la files
-	sed -i "/dependency_libs/ s/'.*'/''/" debian/tmp/usr/lib/*.la
 
 override_dh_systemd_start:
 	dh_systemd_start quagga.service
