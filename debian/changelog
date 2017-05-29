@@ -6,6 +6,7 @@ quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
      + Switch back to 3.0 (quilt) format.
      + Drop all patches (not applied by Cumulus).
      + Do not ship Cumulus-specific files.
+     + Do not ship development files.
 
  -- Vincent Bernat <bernat@debian.org>  Tue, 23 May 2017 16:15:53 +0200
 
