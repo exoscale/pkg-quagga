@@ -1,0 +1,161 @@
+From d18fac14ec98195f2c7646ab08d104802449f0d4 Mon Sep 17 00:00:00 2001
+From: Vincent Bernat <vincent@bernat.im>
+Date: Mon, 29 May 2017 11:40:37 +0200
+Subject: [PATCH] revert: Add source of route as protocol string in ip route
+ pushed into kernel
+
+This reverts 5d540381dd2827a9095131e546cb8d670a250d15. This makes
+packaging easier as it's not easy to register those new protos to
+iproute2.
+---
+ cumulus/etc/iproute2/rt_protos.d/quagga.conf |  8 -----
+ tools/quagga                                 |  9 +-----
+ zebra/kernel_netlink.c                       |  5 ----
+ zebra/rt_netlink.c                           | 45 ++--------------------------
+ zebra/rt_netlink.h                           |  8 -----
+ 6 files changed, 3 insertions(+), 73 deletions(-)
+ delete mode 100644 cumulus/etc/iproute2/rt_protos.d/quagga.conf
+
+diff --git a/cumulus/etc/iproute2/rt_protos.d/quagga.conf b/cumulus/etc/iproute2/rt_protos.d/quagga.conf
+deleted file mode 100644
+index 883782e4dd20..000000000000
+--- a/cumulus/etc/iproute2/rt_protos.d/quagga.conf
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# Additional protocol strings defined by quagga for each of its daemons
+-
+-186  bgp
+-187  isis
+-188  ospf
+-189  rip
+-190  ripng
+-191  static
+diff --git a/tools/quagga b/tools/quagga
+index b42f68239a69..72f9ca4fb0d4 100755
+--- a/tools/quagga
++++ b/tools/quagga
+@@ -532,15 +532,8 @@ case "$1" in
+         fi
+ 
+         if [ -z "$dmn" -o "$dmn" = "zebra" ]; then
+-          echo "Removing all routes made by quagga."
+-          ip route flush proto bgp
+-          ip route flush proto ospf
+-          ip route flush proto static
+-          ip route flush proto rip
+-          ip route flush proto ripng
++          echo "Removing all routes made by zebra."
+           ip route flush proto zebra
+-          ip route flush proto isis
+-
+        else
+          [ -n "$dmn" ] && eval "${dmn/-/_}=0"
+          start_watchquagga
+diff --git a/zebra/kernel_netlink.c b/zebra/kernel_netlink.c
+index 59cb710571a7..7986473e5dfa 100644
+--- a/zebra/kernel_netlink.c
++++ b/zebra/kernel_netlink.c
+@@ -91,11 +91,6 @@ static const struct message rtproto_str[] = {
+ #ifdef RTPROT_BIRD
+   {RTPROT_BIRD,     "BIRD"},
+ #endif /* RTPROT_BIRD */
+-  {RTPROT_BGP,      "BGP"},
+-  {RTPROT_OSPF,     "OSPF"},
+-  {RTPROT_ISIS,     "IS-IS"},
+-  {RTPROT_RIP,      "RIP"},
+-  {RTPROT_RIPNG,    "RIPNG"},
+   {0,               NULL}
+ };
+ 
+diff --git a/zebra/rt_netlink.c b/zebra/rt_netlink.c
+index b02601ae9835..12646350d2a3 100644
+--- a/zebra/rt_netlink.c
++++ b/zebra/rt_netlink.c
+@@ -127,47 +127,6 @@ struct gw_family_t
+   union g_addr  gate;
+ };
+ 
+-static inline int is_selfroute(int proto)
+-{
+-  if ((proto == RTPROT_BGP) || (proto == RTPROT_OSPF) ||
+-      (proto == RTPROT_STATIC) || (proto == RTPROT_ZEBRA) ||
+-      (proto == RTPROT_ISIS) || (proto == RTPROT_RIPNG)) {
+-    return 1;
+-  }
+-
+-  return 0;
+-}
+-
+-static inline int get_rt_proto(int proto)
+-{
+-  switch (proto) {
+-  case ZEBRA_ROUTE_BGP:
+-    proto = RTPROT_BGP;
+-    break;
+-  case ZEBRA_ROUTE_OSPF:
+-  case ZEBRA_ROUTE_OSPF6:
+-    proto = RTPROT_OSPF;
+-    break;
+-  case ZEBRA_ROUTE_STATIC:
+-    proto = RTPROT_STATIC;
+-    break;
+-  case ZEBRA_ROUTE_ISIS:
+-    proto = RTPROT_ISIS;
+-    break;
+-  case ZEBRA_ROUTE_RIP:
+-    proto = RTPROT_RIP;
+-    break;
+-  case ZEBRA_ROUTE_RIPNG:
+-    proto = RTPROT_RIPNG;
+-    break;
+-  default:
+-    proto = RTPROT_ZEBRA;
+-    break;
+-  }
+-
+-  return proto;
+-}
+-
+ /*
+ Pending: create an efficient table_id (in a tree/hash) based lookup)
+  */
+@@ -263,7 +222,7 @@ netlink_route_change_read_unicast (struct sockaddr_nl *snl, struct nlmsghdr *h,
+     }
+ 
+   /* Route which inserted by Zebra, only on startup */
+-  if (is_selfroute(rtm->rtm_protocol))
++  if (rtm->rtm_protocol == RTPROT_ZEBRA)
+     flags |= ZEBRA_FLAG_SELFROUTE;
+ 
+   index = 0;
+@@ -1764,7 +1723,7 @@ netlink_route_multipath (int cmd, struct prefix *p, struct rib *rib,
+   req.n.nlmsg_type = cmd;
+   req.r.rtm_family = family;
+   req.r.rtm_dst_len = p->prefixlen;
+-  req.r.rtm_protocol = get_rt_proto(rib->type);
++  req.r.rtm_protocol = RTPROT_ZEBRA;
+   req.r.rtm_scope = RT_SCOPE_UNIVERSE;
+ 
+   if ((rib->flags & ZEBRA_FLAG_BLACKHOLE) || (rib->flags & ZEBRA_FLAG_REJECT))
+diff --git a/zebra/rt_netlink.h b/zebra/rt_netlink.h
+index 4331915f7573..4e6619d55c70 100644
+--- a/zebra/rt_netlink.h
++++ b/zebra/rt_netlink.h
+@@ -28,14 +28,6 @@
+ 
+ #define NL_DEFAULT_ROUTE_METRIC 20
+ 
+-/* Additional protocol strings to push into routes */
+-#define RTPROT_BGP         186
+-#define RTPROT_ISIS        187
+-#define RTPROT_OSPF        188
+-#define RTPROT_RIP         189
+-#define RTPROT_RIPNG       190
+-
+-
+ extern void
+ clear_nhlfe_installed (zebra_lsp_t *lsp);
+ extern int
+-- 
+2.11.0
+
