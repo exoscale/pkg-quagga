@@ -4,6 +4,7 @@ quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
      + Build-Depends on pkg-config.
      + Remove Cumulus-specific include in logrotate configuration file.
      + Switch back to 3.0 (quilt) format.
+     + Drop all patches (not applied by Cumulus).
 
  -- Vincent Bernat <bernat@debian.org>  Tue, 23 May 2017 16:15:53 +0200
 
