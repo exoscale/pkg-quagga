@@ -11,6 +11,7 @@ quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
   * Revert patch for using multiple protocols instead of "zebra". This
     makes packaging too complex.
   * Add patch for JunOS BGP EVPN compatibility.
+  * Add dependency on python-ipaddr for quagga-reload script.
 
  -- Vincent Bernat <bernat@debian.org>  Tue, 23 May 2017 16:15:53 +0200
 
