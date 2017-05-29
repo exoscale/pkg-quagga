@@ -6,7 +6,6 @@
         compress
         rotate 14
         create 640 quagga quaggavty
-        include /etc/logrotate.d/cumulus.savefast
 
         postrotate
 		for i in zebra bgpd ripd ospfd ripngd ospf6d isisd pimd ldpd; do

@@ -2,6 +2,7 @@ quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
 
   * Adapt to compile on Xenial.
      + Build-Depends on pkg-config.
+     + Remove Cumulus-specific include in logrotate configuration file.
 
  -- Vincent Bernat <bernat@debian.org>  Tue, 23 May 2017 16:15:53 +0200
 
