@@ -1,6 +1,6 @@
 etc/quagga/
 usr/bin/vtysh
-usr/lib/quagga/*.so.*
+usr/lib/quagga
 tools/quagga-reload.py usr/lib/quagga/
 tools/quagga usr/lib/quagga
 usr/share/doc/quagga/
