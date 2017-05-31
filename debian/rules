@@ -54,7 +54,6 @@ override_dh_auto_configure:
 		--enable-systemd=no \
 		--enable-poll=yes \
 		--enable-evpn=yes \
-		--enable-cumulus=yes \
 		--enable-pimd=yes \
 		--enable-bgp-vnc=no \
 		--enable-ldpd=yes \
