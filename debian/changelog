@@ -1,4 +1,4 @@
-quagga (1.0.0+cl3u11-0~xenial0+exo2) precise; urgency=medium
+quagga (1.0.0+cl3u11-0~precise0+exo2) precise; urgency=medium
 
   * Backport to Precise.
 
