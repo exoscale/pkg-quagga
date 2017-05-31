@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u11-0~xenial0+exo2) precise; urgency=medium
+
+  * Backport to Precise.
+
+ -- Vincent Bernat <bernat@debian.org>  Wed, 31 May 2017 14:24:31 +0200
+
 quagga (1.0.0+cl3u11-0~xenial0+exo2) xenial; urgency=medium
 
   * Do not enable Cumulus-special behaviour, notably:
