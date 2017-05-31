@@ -1,0 +1,50 @@
+From 2c10e13da931a63b76397cb73493aed07e6aeab9 Mon Sep 17 00:00:00 2001
+From: Vincent Bernat <vincent@bernat.im>
+Date: Wed, 31 May 2017 16:25:17 +0200
+Subject: [PATCH] zebra: don't crash when kernel doesn't provide some
+ information
+
+---
+ zebra/if_netlink.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/zebra/if_netlink.c b/zebra/if_netlink.c
+index 60a12c6c73b4..f0f35e7a4f21 100644
+--- a/zebra/if_netlink.c
++++ b/zebra/if_netlink.c
+@@ -322,8 +322,8 @@ netlink_bridge_interface_add_update (struct interface *ifp,
+   struct zebra_l2if_bridge zl2if;
+ 
+   /* Extract Bridge parameters. */
+-  assert (link_data);
+-  netlink_extract_bridge_info (link_data, &zl2if);
++  if (link_data)
++    netlink_extract_bridge_info (link_data, &zl2if);
+ 
+   /* Create/update Bridge interface */
+   zebra_l2_bridge_add_update (ifp, &zl2if);
+@@ -339,8 +339,8 @@ netlink_vlan_interface_add_update (struct interface *ifp,
+   struct zebra_l2if_vlan zl2if;
+ 
+   /* Extract VLAN link parameters. */
+-  assert (link_data);
+-  netlink_extract_vlan_info (link_data, &zl2if);
++  if (link_data)
++    netlink_extract_vlan_info (link_data, &zl2if);
+ 
+   /* Set master (bridge) ifindex, if any */
+   zl2if.br_slave.bridge_ifindex = bridge_ifindex;
+@@ -363,8 +363,8 @@ netlink_vxlan_interface_add_update (struct interface *ifp,
+   struct zebra_l2if_vxlan zl2if;
+ 
+   /* Extract VxLAN link parameters. */
+-  assert (link_data);
+-  netlink_extract_vxlan_info (link_data, &zl2if);
++  if (link_data)
++    netlink_extract_vxlan_info (link_data, &zl2if);
+ 
+   /* Set master (bridge) ifindex, if any */
+   zl2if.br_slave.bridge_ifindex = bridge_ifindex;
+-- 
+2.11.0
+

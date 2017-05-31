@@ -1,3 +1,10 @@
+quagga (1.0.0+cl3u11-0~xenial0+exo3) xenial; urgency=medium
+
+  * Add patch to support older kernels not providing all information
+    through Netlink.
+
+ -- Vincent Bernat <bernat@debian.org>  Wed, 31 May 2017 16:26:41 +0200
+
 quagga (1.0.0+cl3u11-0~precise0+exo2) precise; urgency=medium
 
   * Backport to Precise.
