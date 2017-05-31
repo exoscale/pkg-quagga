@@ -1,3 +1,12 @@
+quagga (1.0.0+cl3u11-0~xenial0+exo2) xenial; urgency=medium
+
+  * Do not enable Cumulus-special behaviour, notably:
+     - bgpd: do not wait for next-hop availability to establish BGP
+             session (next-hop tracking doesn't account for IP rules).
+     - bgpd: inability to bind to a VRF is not fatal.
+
+ -- Vincent Bernat <bernat@debian.org>  Wed, 31 May 2017 14:17:43 +0200
+
 quagga (1.0.0+cl3u11-0~xenial0+exo1) xenial; urgency=medium
 
   * Adapt to compile on Xenial.
