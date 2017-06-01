@@ -1,0 +1,57 @@
+From 2330d20e401359f98baa05b94d9814a0cc0432c0 Mon Sep 17 00:00:00 2001
+From: Vincent Bernat <vincent@bernat.im>
+Date: Thu, 1 Jun 2017 11:44:52 +0200
+Subject: [PATCH] zebra: on old kernel, alternate way to check a bridge port
+
+---
+ zebra/if_netlink.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/zebra/if_netlink.c b/zebra/if_netlink.c
+index 60a12c6c73b4..851ce2584109 100644
+--- a/zebra/if_netlink.c
++++ b/zebra/if_netlink.c
+@@ -550,6 +550,18 @@ netlink_interface_af_bridge (struct nlmsghdr *h, int len,
+   return 0;
+ }
+ 
++/* Check if the given interface is bridged using sysfs. */
++static int
++sysfs_is_bridged (const char *name)
++{
++  char syspath[MAXPATHLEN];
++  struct stat path_stat;
++  (void) snprintf (syspath, sizeof(syspath), "/sys/class/net/%s/brport",
++                   name);
++  return (stat(syspath, &path_stat) == 0 &&
++          S_ISDIR(path_stat.st_mode));
++}
++
+ /* Called from interface_lookup_netlink().  This function is only used
+    during bootstrap. */
+ static int
+@@ -633,7 +645,9 @@ netlink_interface (struct sockaddr_nl *snl, struct nlmsghdr *h,
+           zif_slave_type = ZEBRA_IF_SLAVE_VRF;
+           vrf_id = *(u_int32_t *)RTA_DATA(tb[IFLA_MASTER]);
+         }
+-      else if (slave_kind && (strcmp(slave_kind, "bridge") == 0))
++      else if ((slave_kind && (strcmp(slave_kind, "bridge") == 0)) ||
++               (!slave_kind && /* Old kernel */
++                sysfs_is_bridged(name)))
+         {
+           zif_slave_type = ZEBRA_IF_SLAVE_BRIDGE;
+           bridge_ifindex = *(ifindex_t *)RTA_DATA(tb[IFLA_MASTER]);
+@@ -1034,7 +1048,9 @@ netlink_link_change (struct sockaddr_nl *snl, struct nlmsghdr *h,
+               zif_slave_type = ZEBRA_IF_SLAVE_VRF;
+               vrf_id = *(u_int32_t *)RTA_DATA(tb[IFLA_MASTER]);
+             }
+-          else if (slave_kind && (strcmp(slave_kind, "bridge") == 0))
++          else if ((slave_kind && (strcmp(slave_kind, "bridge") == 0)) ||
++                   (!slave_kind && /* Old kernel */
++                    sysfs_is_bridged(name)))
+             {
+               zif_slave_type = ZEBRA_IF_SLAVE_BRIDGE;
+               bridge_ifindex = *(ifindex_t *)RTA_DATA(tb[IFLA_MASTER]);
+-- 
+2.11.0
+

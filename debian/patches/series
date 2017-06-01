@@ -1,3 +1,4 @@
 0001-revert-Add-source-of-route-as-protocol-string-in-ip-.patch
 0001-Quick-and-dirty-hack-for-JunOS-compatibility.patch
 0001-zebra-don-t-crash-when-kernel-doesn-t-provide-some-i.patch
+0001-zebra-on-old-kernel-alternate-way-to-check-a-bridge-.patch
