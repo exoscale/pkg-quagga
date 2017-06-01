@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u12) RELEASED; urgency=medium
+
+  * New Enabled: SNMP/agentx support for OSPF MIB (RFC-1850) 
+
+ -- dev-support <dev-support@cumulusnetworks.com>  Sat, 20 May 2017 17:35:04 -0700
+
 quagga (1.0.0+cl3u11-0~xenial0+exo3) xenial; urgency=medium
 
   * Add patch to support older kernels not providing all information
