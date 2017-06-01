@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u12-0~precise0+exo2) precise; urgency=medium
+
+  * Backport to Precise.
+
+ -- Vincent Bernat <bernat@debian.org>  Thu, 01 Jun 2017 09:41:44 +0200
+
 quagga (1.0.0+cl3u12-0~xenial0+exo2) xenial; urgency=medium
 
   * Delay restart on upgrade.
