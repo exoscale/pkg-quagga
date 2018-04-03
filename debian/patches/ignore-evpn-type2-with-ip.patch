@@ -1,0 +1,21 @@
+Quick hack to just discard EVPN Type 2 with an IP address. We do not
+use them and installing them brings only pain.
+
+Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
+===================================================================
+--- quagga-1.0.0+cl3u12.orig/bgpd/bgp_evpn.c
++++ quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
+@@ -1900,10 +1900,9 @@ process_type2_route (struct peer *peer,
+ 
+   if (ipaddr_len)
+     {
+-      ipaddr_len /= 8; /* Convert to bytes. */
+-      p.prefix.ip.ipa_type = (ipaddr_len == IPV4_MAX_BYTELEN) ? 
+-                             IPADDR_V4 : IPADDR_V6;
+-      memcpy (&p.prefix.ip.ip.addr, pfx, ipaddr_len);
++      zlog_err ("%u:%s - Rx EVPN Type-2 NLRI with IP, skip",
++                peer->bgp->vrf_id, peer->host);
++      return -1;
+     }
+   pfx += ipaddr_len;
+ 

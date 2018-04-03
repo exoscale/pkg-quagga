@@ -1,3 +1,11 @@
+quagga (1.0.0+cl3u12-0~xenial0+exo3) xenial; urgency=medium
+
+  * Just ignore EVPN Type2 routes with IP addresses. They have adverse
+    effect on our network and filtering them is not possible with this
+    version of Quagga.
+
+ -- Vincent Bernat <bernat@debian.org>  Tue, 03 Apr 2018 11:02:27 +0200
+
 quagga (1.0.0+cl3u12-0~xenial0+exo2) xenial; urgency=medium
 
   * Delay restart on upgrade.
