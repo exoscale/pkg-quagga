@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u12-0~xenial0+exo4) xenial; urgency=medium
+
+  * Don't treat filtered EVPN Type2 route as an error.
+
+ -- Vincent Bernat <bernat@debian.org>  Tue, 03 Apr 2018 11:37:09 +0200
+
 quagga (1.0.0+cl3u12-0~xenial0+exo3) xenial; urgency=medium
 
   * Just ignore EVPN Type2 routes with IP addresses. They have adverse

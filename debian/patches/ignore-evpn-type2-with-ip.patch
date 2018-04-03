@@ -15,7 +15,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
 -      memcpy (&p.prefix.ip.ip.addr, pfx, ipaddr_len);
 +      zlog_err ("%u:%s - Rx EVPN Type-2 NLRI with IP, skip",
 +                peer->bgp->vrf_id, peer->host);
-+      return -1;
++      return 0;
      }
    pfx += ipaddr_len;
  
