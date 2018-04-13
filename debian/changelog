@@ -1,6 +1,7 @@
 quagga (1.0.0+cl3u12-0~xenial0+exo6) xenial; urgency=medium
 
   * Fix incorrect BGP EVPN prefix struct.
+  * Add PMSI tunnel attribute to IMET routes.
 
  -- Vincent Bernat <bernat@debian.org>  Fri, 13 Apr 2018 14:23:39 +0200
 

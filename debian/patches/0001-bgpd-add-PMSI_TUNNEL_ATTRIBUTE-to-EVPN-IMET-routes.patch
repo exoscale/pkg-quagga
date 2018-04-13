@@ -1,0 +1,102 @@
+From 5780b81ed25e2840ebd07976b35a76d80a73f406 Mon Sep 17 00:00:00 2001
+From: Dario Wiesner <dario.wiesner@gmail.com>
+Date: Thu, 4 Jan 2018 12:34:24 +0100
+Subject: [PATCH 1/2] bgpd: add PMSI_TUNNEL_ATTRIBUTE to EVPN IMET routes
+
+Signed-off-by: Dario Wiesner <dario.wiesner@gmail.com>
+---
+ bgpd/bgp_attr.c | 13 +++++++++++++
+ bgpd/bgp_attr.h |  4 ++++
+ bgpd/bgp_evpn.c |  3 +++
+ bgpd/bgpd.h     |  1 +
+ 4 files changed, 21 insertions(+)
+
+diff --git a/bgpd/bgp_attr.c b/bgpd/bgp_attr.c
+index c2ca188605bb..b150272df6e9 100644
+--- a/bgpd/bgp_attr.c
++++ b/bgpd/bgp_attr.c
+@@ -72,6 +72,7 @@ static const struct message attr_str [] =
+   { BGP_ATTR_AS4_PATH,         "AS4_PATH" }, 
+   { BGP_ATTR_AS4_AGGREGATOR,   "AS4_AGGREGATOR" }, 
+   { BGP_ATTR_AS_PATHLIMIT,     "AS_PATHLIMIT" },
++  { BGP_ATTR_PMSI_TUNNEL,      "PMSI_TUNNEL_ATTRIBUTE" },
+   { BGP_ATTR_ENCAP,            "ENCAP" },
+ #if ENABLE_BGP_VNC
+   { BGP_ATTR_VNC,              "VNC" },
+@@ -1143,6 +1144,7 @@ const u_int8_t attr_flags_values [] = {
+   [BGP_ATTR_EXT_COMMUNITIES] =  BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS,
+   [BGP_ATTR_AS4_PATH] =         BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS,
+   [BGP_ATTR_AS4_AGGREGATOR] =   BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS,
++  [BGP_ATTR_PMSI_TUNNEL] =      BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS,
+ };
+ static const size_t attr_flags_values_max = array_size(attr_flags_values) - 1;
+ 
+@@ -3237,6 +3239,17 @@ bgp_packet_attribute (struct bgp *bgp, struct peer *peer,
+ #endif
+     }
+ 
++  /* PMSI Tunnel */
++  if (attr->flag & ATTR_FLAG_BIT(BGP_ATTR_PMSI_TUNNEL)) {
++    stream_putc(s, BGP_ATTR_FLAG_OPTIONAL | BGP_ATTR_FLAG_TRANS);
++    stream_putc(s, BGP_ATTR_PMSI_TUNNEL);
++    stream_putc(s, 9); // Length
++    stream_putc(s, 0); // Flags
++    stream_putc(s, 6); // Tunnel type: Ingress Replication (6)
++    stream_put(s, &attr->label, 3); // MPLS Label / VXLAN VNI
++    stream_put_ipv4(s, attr->nexthop.s_addr); // Unicast tunnel endpoint IP address
++  }
++
+   /* Unknown transit attribute. */
+   if (attr->extra && attr->extra->transit)
+     stream_put (s, attr->extra->transit->val, attr->extra->transit->length);
+diff --git a/bgpd/bgp_attr.h b/bgpd/bgp_attr.h
+index 6c47e2d50891..8087ab32f230 100644
+--- a/bgpd/bgp_attr.h
++++ b/bgpd/bgp_attr.h
+@@ -21,6 +21,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+ #ifndef _QUAGGA_BGP_ATTR_H
+ #define _QUAGGA_BGP_ATTR_H
+ 
++#include "mpls.h"
++
+ /* Simple bit mapping. */
+ #define BITMAP_NBBY 8
+ 
+@@ -161,6 +163,8 @@ struct attr
+   /* has the route-map changed any attribute?
+      Used on the peer outbound side. */
+   u_int32_t rmap_change_flags;
++
++  mpls_label_t label;
+ };
+ 
+ /* rmap_change_flags definition */
+diff --git a/bgpd/bgp_evpn.c b/bgpd/bgp_evpn.c
+index 5666a25db64e..c37ad65366be 100644
+--- a/bgpd/bgp_evpn.c
++++ b/bgpd/bgp_evpn.c
+@@ -782,6 +782,9 @@ update_evpn_route (struct bgp *bgp, struct bgpevpn *vpn,
+   bgp_attr_default_set (&attr, BGP_ORIGIN_IGP);
+   attr.nexthop = vpn->originator_ip;
+   attr.extra->sticky = sticky;
++  if (p->prefix.route_type == BGP_EVPN_IMET_ROUTE)
++	  attr.flag |= ATTR_FLAG_BIT(BGP_ATTR_PMSI_TUNNEL);
++  vni2tag(vpn->vni, (uint8_t*)&attr.label);
+ 
+   /* Set up RT and ENCAP extended community. */
+   build_evpn_route_extcomm (vpn, &attr);
+diff --git a/bgpd/bgpd.h b/bgpd/bgpd.h
+index f6224596e0b4..0aaf3d34d3d8 100644
+--- a/bgpd/bgpd.h
++++ b/bgpd/bgpd.h
+@@ -959,6 +959,7 @@ struct bgp_nlri
+ #define BGP_ATTR_AS4_PATH                       17
+ #define BGP_ATTR_AS4_AGGREGATOR                 18
+ #define BGP_ATTR_AS_PATHLIMIT                   21
++#define BGP_ATTR_PMSI_TUNNEL                    22
+ #define BGP_ATTR_ENCAP                          23
+ #if ENABLE_BGP_VNC
+ #define BGP_ATTR_VNC                           255
+-- 
+2.17.0
+
