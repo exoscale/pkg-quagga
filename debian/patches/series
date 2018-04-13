@@ -2,3 +2,4 @@
 0001-Quick-and-dirty-hack-for-JunOS-compatibility.patch
 0001-zebra-don-t-crash-when-kernel-doesn-t-provide-some-i.patch
 ignore-evpn-type2-with-ip.patch
+0001-bgpd-add-basic-support-for-ETI-for-BGP-EVPN.patch
