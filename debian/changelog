@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u12-0~xenial0+exo6) xenial; urgency=medium
+
+  * Fix incorrect BGP EVPN prefix struct.
+
+ -- Vincent Bernat <bernat@debian.org>  Fri, 13 Apr 2018 14:23:39 +0200
+
 quagga (1.0.0+cl3u12-0~xenial0+exo5) xenial; urgency=medium
 
   * Add patch to use ETI as part of EVPN prefix.

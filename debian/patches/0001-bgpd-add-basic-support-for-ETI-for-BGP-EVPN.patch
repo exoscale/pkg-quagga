@@ -1,4 +1,4 @@
-From ac442808f7a6f618684eaed724a2306e685d4191 Mon Sep 17 00:00:00 2001
+From 37b1d5eb122fca90f56f8b63bf4e9a62c94c92b4 Mon Sep 17 00:00:00 2001
 From: Vincent Bernat <vincent@bernat.im>
 Date: Fri, 13 Apr 2018 11:12:39 +0200
 Subject: [PATCH] bgpd: add basic support for ETI for BGP EVPN
@@ -11,14 +11,14 @@ ignored while it should be reflected correctly.
 ---
  bgpd/bgp_evpn.c    | 32 ++++++++++++++++++++++----------
  bgpd/bgp_evpn_ui.c |  4 ++--
- lib/prefix.h       |  1 +
- 3 files changed, 25 insertions(+), 12 deletions(-)
+ lib/prefix.h       |  4 +++-
+ 3 files changed, 27 insertions(+), 13 deletions(-)
 
-Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
-===================================================================
---- quagga-1.0.0+cl3u12.orig/bgpd/bgp_evpn.c
-+++ quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
-@@ -1836,6 +1836,7 @@ process_type2_route (struct peer *peer,
+diff --git a/bgpd/bgp_evpn.c b/bgpd/bgp_evpn.c
+index 20f54aaea6b5..043fe766e754 100644
+--- a/bgpd/bgp_evpn.c
++++ b/bgpd/bgp_evpn.c
+@@ -1744,6 +1744,7 @@ process_type2_route (struct peer *peer, afi_t afi, safi_t safi,
    u_char ipaddr_len;
    u_char macaddr_len;
    u_char *tagpnt;
@@ -26,7 +26,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
    int ret;
  
    /* Type-2 route should be either 33, 37 or 49 bytes or an
-@@ -1867,7 +1868,9 @@ process_type2_route (struct peer *peer,
+@@ -1775,7 +1776,9 @@ process_type2_route (struct peer *peer, afi_t afi, safi_t safi,
    /* Skip over Ethernet Seg Identifier for now. */
    pfx += 10;
  
@@ -37,7 +37,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
    pfx += 4;
  
    /* Get the MAC Addr len */
-@@ -1931,6 +1934,7 @@ process_type3_route (struct peer *peer,
+@@ -1840,6 +1843,7 @@ process_type3_route (struct peer *peer, afi_t afi, safi_t safi,
    struct prefix_rd prd;
    struct prefix_evpn p;
    u_char ipaddr_len;
@@ -45,7 +45,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
    int ret;
  
    /* Type-3 route should be either 17 or 29 bytes: RD (8), Eth Tag (4),
-@@ -1955,7 +1959,9 @@ process_type3_route (struct peer *peer,
+@@ -1864,7 +1868,9 @@ process_type3_route (struct peer *peer, afi_t afi, safi_t safi,
    p.prefixlen = EVPN_TYPE_3_ROUTE_PREFIXLEN;
    p.prefix.route_type = BGP_EVPN_IMET_ROUTE;
  
@@ -56,7 +56,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
    pfx += 4;
  
    /* Get the IP. */
-@@ -2011,16 +2017,20 @@ bgp_evpn_route2str (struct prefix_evpn *
+@@ -1920,16 +1926,20 @@ bgp_evpn_route2str (struct prefix_evpn *p, char *buf, int len)
  
    if (p->prefix.route_type == BGP_EVPN_IMET_ROUTE)
      {
@@ -81,7 +81,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
                    mac2str (&p->prefix.mac, buf1, sizeof(buf1)));
        else
          {
-@@ -2028,8 +2038,10 @@ bgp_evpn_route2str (struct prefix_evpn *
+@@ -1937,8 +1947,10 @@ bgp_evpn_route2str (struct prefix_evpn *p, char *buf, int len)
  
            family = IS_EVPN_PREFIX_IPADDR_V4(p) ? \
                     AF_INET : AF_INET6;
@@ -94,7 +94,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
                      mac2str (&p->prefix.mac, buf1, sizeof(buf1)),
                      family == AF_INET ? IPV4_MAX_BITLEN : IPV6_MAX_BITLEN,
                      inet_ntop (family, &p->prefix.ip.ip.addr,
-@@ -2259,7 +2271,7 @@ bgp_evpn_encode_prefix (struct stream *s
+@@ -2167,7 +2179,7 @@ bgp_evpn_encode_prefix (struct stream *s, struct prefix *p,
        case BGP_EVPN_IMET_ROUTE:
          stream_putc (s, 17); // TODO: length - assumes IPv4 address
          stream_put (s, prd->val, 8); /* RD */
@@ -103,7 +103,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
          stream_putc (s, IPV4_MAX_BITLEN); /* IP address Length - bits */
          /* Originating Router's IP Addr */
          stream_put_in_addr (s, &evp->prefix.ip.ip.v4_addr);
-@@ -2273,7 +2285,7 @@ bgp_evpn_encode_prefix (struct stream *s
+@@ -2181,7 +2193,7 @@ bgp_evpn_encode_prefix (struct stream *s, struct prefix *p,
          stream_putc (s, 33 + ipa_len); // 1 VNI
          stream_put (s, prd->val, 8); /* RD */
          stream_put (s, 0, 10); /* ESI */
@@ -112,11 +112,11 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn.c
          stream_putc (s, 8*ETHER_ADDR_LEN); /* Mac Addr Len - bits */
          stream_put (s, evp->prefix.mac.octet, 6); /* Mac Addr */
          stream_putc (s, 8*ipa_len); /* IP address Length */
-Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn_ui.c
-===================================================================
---- quagga-1.0.0+cl3u12.orig/bgpd/bgp_evpn_ui.c
-+++ quagga-1.0.0+cl3u12/bgpd/bgp_evpn_ui.c
-@@ -251,7 +251,7 @@ bgp_evpn_show_route_header (struct vty *
+diff --git a/bgpd/bgp_evpn_ui.c b/bgpd/bgp_evpn_ui.c
+index 88acee953a22..9573a8158b16 100644
+--- a/bgpd/bgp_evpn_ui.c
++++ b/bgpd/bgp_evpn_ui.c
+@@ -250,7 +250,7 @@ bgp_evpn_show_route_header (struct vty *vty, struct bgp *bgp)
             "* valid, > best, i - internal%s", VTY_NEWLINE);
    vty_out (vty, "Origin codes: i - IGP, e - EGP, ? - incomplete%s",
             VTY_NEWLINE);
@@ -125,7 +125,7 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn_ui.c
             VTY_NEWLINE);
    vty_out (vty, "EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]%s%s",
             VTY_NEWLINE, VTY_NEWLINE);
-@@ -989,7 +989,7 @@ bgp_evpn_show_route_rd (struct vty *vty,
+@@ -976,7 +976,7 @@ bgp_evpn_show_route_rd (struct vty *vty, struct bgp *bgp,
            /* RD header and legend - once overall. */
            if (rd_header)
              {
@@ -134,15 +134,22 @@ Index: quagga-1.0.0+cl3u12/bgpd/bgp_evpn_ui.c
                         "[MAC]%s", VTY_NEWLINE);
                vty_out (vty, "EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:"
                         "[OrigIP]%s%s", VTY_NEWLINE, VTY_NEWLINE);
-Index: quagga-1.0.0+cl3u12/lib/prefix.h
-===================================================================
---- quagga-1.0.0+cl3u12.orig/lib/prefix.h
-+++ quagga-1.0.0+cl3u12/lib/prefix.h
-@@ -63,6 +63,7 @@ struct evpn_addr
-   u_char route_type;
+diff --git a/lib/prefix.h b/lib/prefix.h
+index ddb50bcd942e..051ad40a07a5 100644
+--- a/lib/prefix.h
++++ b/lib/prefix.h
+@@ -60,8 +60,10 @@ struct ethaddr {
+ /* EVPN address (RFC 7432) */
+ struct evpn_addr
+ {
+-  u_char route_type;
++  uint8_t route_type;
++  uint8_t ip_prefix_length;
    struct ethaddr mac;
-   struct ipaddr ip;
 +  uint32_t eth_tag;
+   struct ipaddr ip;
  };
  
- #define IS_EVPN_PREFIX_IPADDR_NONE(evp)  IS_IPADDR_NONE(&(evp)->prefix.ip)
+-- 
+2.17.0
+
