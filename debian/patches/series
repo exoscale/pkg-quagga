@@ -4,3 +4,4 @@
 ignore-evpn-type2-with-ip.patch
 0001-bgpd-add-basic-support-for-ETI-for-BGP-EVPN.patch
 0001-bgpd-add-PMSI_TUNNEL_ATTRIBUTE-to-EVPN-IMET-routes.patch
+0001-bgpd-encode-VNI-in-ETI.patch

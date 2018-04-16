@@ -1,3 +1,9 @@
+quagga (1.0.0+cl3u12-0~xenial0+exo7) xenial; urgency=medium
+
+  * Encode VNI inside ETI.
+
+ -- Vincent Bernat <bernat@debian.org>  Mon, 16 Apr 2018 16:01:22 +0200
+
 quagga (1.0.0+cl3u12-0~xenial0+exo6) xenial; urgency=medium
 
   * Fix incorrect BGP EVPN prefix struct.

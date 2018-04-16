@@ -1,0 +1,158 @@
+From 1707b07dfcb71a75e0d17c1ab14f5985b3185ce0 Mon Sep 17 00:00:00 2001
+From: Vincent Bernat <vincent@bernat.im>
+Date: Mon, 16 Apr 2018 15:59:47 +0200
+Subject: [PATCH] bgpd: encode VNI in ETI
+
+This is not mandatory as per RFC 8365, but maybe it would help JunOS.
+---
+ bgpd/bgp_evpn.c    | 17 +++++++++--------
+ bgpd/bgp_evpn.h    |  7 +++++--
+ bgpd/bgp_evpn_ui.c |  6 +++---
+ 3 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/bgpd/bgp_evpn.c b/bgpd/bgp_evpn.c
+index 8e6adb8dfb13..fc840e989e46 100644
+--- a/bgpd/bgp_evpn.c
++++ b/bgpd/bgp_evpn.c
+@@ -1095,7 +1095,8 @@ update_routes_for_vni (struct bgp *bgp, struct bgpevpn *vpn)
+   /* Update and advertise the type-3 route (only one) followed by the
+    * locally learnt type-2 routes (MACIP) - for this VNI.
+    */
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
++  p.prefix.eth_tag = vpn->vni;
+   ret = update_evpn_route (bgp, vpn, &p);
+   if (ret)
+     return ret;
+@@ -1122,7 +1123,7 @@ delete_routes_for_vni (struct bgp *bgp, struct bgpevpn *vpn)
+   if (ret)
+     return ret;
+ 
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
+   ret = delete_evpn_route (bgp, vpn, &p);
+   if (ret)
+     return ret;
+@@ -1150,7 +1151,7 @@ update_advertise_vni_routes (struct bgp *bgp, struct bgpevpn *vpn)
+    * attributes to create and advertise the type-3 route for this VNI
+    * in the global table.
+    */
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
+   rn = bgp_node_lookup (vpn->route_table, (struct prefix *)&p);
+   if (!rn) /* unexpected */
+     return 0;
+@@ -1231,7 +1232,7 @@ delete_withdraw_vni_routes (struct bgp *bgp, struct bgpevpn *vpn)
+     return ret;
+ 
+   /* Remove type-3 route for this VNI from global table. */
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
+   global_rn = bgp_afi_node_lookup (bgp->rib[afi][safi], afi, safi,
+                                    (struct prefix *)&p, &vpn->prd);
+   if (global_rn)
+@@ -1335,7 +1336,7 @@ handle_tunnel_ip_change (struct bgp *bgp, struct bgpevpn *vpn,
+   /* Need to withdraw type-3 route as the originator IP is part
+    * of the key.
+    */
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
+   delete_evpn_route (bgp, vpn, &p);
+ 
+   /* Update the tunnel IP and re-advertise all routes for this VNI. */
+@@ -2438,7 +2439,7 @@ bgp_evpn_local_macip_add (struct bgp *bgp, vni_t vni,
+     }
+ 
+   /* Create EVPN type-2 route and schedule for processing. */
+-  build_evpn_type2_prefix (&p, mac, ip);
++  build_evpn_type2_prefix (&p, mac, ip, vpn->vni);
+   if (update_evpn_route (bgp, vpn, &p))
+     {
+       char buf[MACADDR_STRLEN];
+@@ -2486,7 +2487,7 @@ bgp_evpn_local_macip_del (struct bgp *bgp, vni_t vni,
+     }
+ 
+   /* Remove EVPN type-2 route and schedule for processing. */
+-  build_evpn_type2_prefix (&p, mac, ip);
++  build_evpn_type2_prefix (&p, mac, ip, vpn->vni);
+   delete_evpn_route (bgp, vpn, &p);
+ 
+   return 0;
+@@ -2544,7 +2545,7 @@ bgp_evpn_local_vni_add (struct bgp *bgp, vni_t vni, struct in_addr originator_ip
+   SET_FLAG (vpn->flags, VNI_FLAG_LIVE);
+ 
+   /* Create EVPN type-3 route and schedule for processing. */
+-  build_evpn_type3_prefix (&p, vpn->originator_ip);
++  build_evpn_type3_prefix (&p, vpn->originator_ip, vpn->vni);
+   if (update_evpn_route (bgp, vpn, &p))
+     {
+       zlog_err ("%u: Type3 route creation failure for VNI %u",
+diff --git a/bgpd/bgp_evpn.h b/bgpd/bgp_evpn.h
+index 6658229e4e2f..3d1cc7020531 100644
+--- a/bgpd/bgp_evpn.h
++++ b/bgpd/bgp_evpn.h
+@@ -176,12 +176,13 @@ encode_mac_mobility_extcomm (int static_mac, u_int32_t seq,
+ 
+ static inline void
+ build_evpn_type2_prefix (struct prefix_evpn *p, struct ethaddr *mac,
+-                         struct ipaddr *ip)
++                         struct ipaddr *ip, uint32_t eth_tag)
+ {
+   memset (p, 0, sizeof (struct prefix_evpn));
+   p->family = AF_ETHERNET;
+   p->prefixlen = EVPN_TYPE_2_ROUTE_PREFIXLEN;
+   p->prefix.route_type = BGP_EVPN_MAC_IP_ROUTE;
++  p->prefix.eth_tag = eth_tag;
+   memcpy(&p->prefix.mac.octet, mac->octet, ETHER_ADDR_LEN);
+   p->prefix.ip.ipa_type = IPADDR_NONE;
+   if (ip)
+@@ -189,12 +190,14 @@ build_evpn_type2_prefix (struct prefix_evpn *p, struct ethaddr *mac,
+ }
+ 
+ static inline void
+-build_evpn_type3_prefix (struct prefix_evpn *p, struct in_addr originator_ip)
++build_evpn_type3_prefix (struct prefix_evpn *p, struct in_addr originator_ip,
++                         uint32_t eth_tag)
+ {
+   memset (p, 0, sizeof (struct prefix_evpn));
+   p->family = AF_ETHERNET;
+   p->prefixlen = EVPN_TYPE_3_ROUTE_PREFIXLEN;
+   p->prefix.route_type = BGP_EVPN_IMET_ROUTE;
++  p->prefix.eth_tag = eth_tag;
+   p->prefix.ip.ipa_type = IPADDR_V4;
+   p->prefix.ip.ip.v4_addr = originator_ip;
+ }
+diff --git a/bgpd/bgp_evpn_ui.c b/bgpd/bgp_evpn_ui.c
+index 9573a8158b16..6603bfe0bc40 100644
+--- a/bgpd/bgp_evpn_ui.c
++++ b/bgpd/bgp_evpn_ui.c
+@@ -798,7 +798,7 @@ bgp_evpn_show_route_vni_multicast (struct vty *vty, struct bgp *bgp,
+     }
+ 
+   /* See if route exists. */
+-  build_evpn_type3_prefix (&p, orig_ip);
++  build_evpn_type3_prefix (&p, orig_ip, vni);
+   rn = bgp_node_lookup (vpn->route_table, (struct prefix *)&p);
+   if (!rn || !rn->info)
+     {
+@@ -848,7 +848,7 @@ bgp_evpn_show_route_vni_mac (struct vty *vty, struct bgp *bgp,
+     }
+ 
+   /* See if route exists. */
+-  build_evpn_type2_prefix (&p, mac, NULL);
++  build_evpn_type2_prefix (&p, mac, NULL, vni);
+   rn = bgp_node_lookup (vpn->route_table, (struct prefix *)&p);
+   if (!rn || !rn->info)
+     {
+@@ -911,7 +911,7 @@ bgp_evpn_show_route_rd_mac (struct vty *vty, struct bgp *bgp,
+   safi = SAFI_EVPN;
+ 
+   /* See if route exists. */
+-  build_evpn_type2_prefix (&p, mac, NULL);
++  build_evpn_type2_prefix (&p, mac, NULL, 0);
+   rn = bgp_afi_node_lookup (bgp->rib[afi][safi], afi, safi,
+                             (struct prefix *)&p, prd);
+   if (!rn || !rn->info)
+-- 
+2.17.0
+
